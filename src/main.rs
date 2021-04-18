@@ -1,18 +1,27 @@
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // セレクターをパース　(このセレクターは記事のアンカーノード群(タイトル)を指す。 <a href="link">Title</a>)
-    let selector = scraper::Selector::parse("td.bn > a").unwrap();
+use scraper::Selector;
 
-    // `https://blog.rust-lang.org/` へHTTPリクエスト
-    let body = reqwest::blocking::get("https://blog.rust-lang.org/")?.text()?;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let selector = scraper::Selector::parse("#fn-list > li > div").unwrap();
+    //::parse("#fn-list > li > div > a").unwrap();
+    //#fn-list > li:nth-child(1) > div > div.m-boxListBookProductBtnBlock > div > span > input[type=hidden]
+
+    // "IT・コンピューター" ジャンルのURL
+    let body = reqwest::blocking::get("https://book.dmm.com/list/otherbooks/?floor=Gotherbooks&n1=DgRJTglEBQ4GLGXbsI2FtdKGtYXTuvDa4cfU5Y6GtY%2AG4ow_")?.text()?;
 
     // HTMLをパース
     let document = scraper::Html::parse_document(&body);
 
     // セレクターを用いて要素を取得
-    let elements = document.select(&selector);
+    let books = document.select(&selector);
+
+    books.for_each(|b| {
+        let a = Selector::parse("a").unwrap();
+        let link = b.select(&a).next().unwrap().value().attr("href").unwrap();
+        println!("{}", link);
+    });
 
     // 全記事名を出力
-    elements.for_each(|e| println!("{}", e.text().next().unwrap()));
+    // elements.for_each(|e| println!("{}", e.text().next().unwrap()));
 
     // 一件目の記事名
     // assert_eq!(elements.next().unwrap().text().next().unwrap(), "Announcing Rust 1.50.0");
