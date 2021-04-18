@@ -1,36 +1,54 @@
-use scraper::Selector;
+use scraper::html::Select;
+use scraper::{Html, Selector};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let selector = scraper::Selector::parse("#fn-list > li > div").unwrap();
-    //::parse("#fn-list > li > div > a").unwrap();
-    //#fn-list > li:nth-child(1) > div > div.m-boxListBookProductBtnBlock > div > span > input[type=hidden]
-
     // "IT・コンピューター" ジャンルのURL
     let body = reqwest::blocking::get("https://book.dmm.com/list/otherbooks/?floor=Gotherbooks&n1=DgRJTglEBQ4GLGXbsI2FtdKGtYXTuvDa4cfU5Y6GtY%2AG4ow_")?.text()?;
 
     // HTMLをパース
-    let document = scraper::Html::parse_document(&body);
+    let document = Html::parse_document(&body);
 
     // セレクターを用いて要素を取得
-    let books = document.select(&selector);
+    let book_selector = Selector::parse("#fn-list > li > div").unwrap();
+    let books = document.select(&book_selector);
 
     books.for_each(|b| {
         let a = Selector::parse("a").unwrap();
         let link = b.select(&a).next().unwrap().value().attr("href").unwrap();
-        println!("{}", link);
+
+        let title_selector =
+            Selector::parse("div.m-boxListBookProductBtnBlock > div > span > input[type=hidden]")
+                .unwrap();
+        let title = b
+            .select(&title_selector)
+            .next()
+            .unwrap()
+            .value()
+            .attr("value")
+            .unwrap();
+
+        // println!("{}\t{}", title, link);
     });
 
-    // 全記事名を出力
-    // elements.for_each(|e| println!("{}", e.text().next().unwrap()));
+    // #l-contents > div.m-boxListController__itemPagenation > div > ul > li:nth-child(5) > span
+    let nav_selector =
+        Selector::parse("#l-contents > div.m-boxListController__itemPagenation > div > ul > li")
+            .unwrap();
+    let nav = document.select(&nav_selector);
 
-    // 一件目の記事名
-    // assert_eq!(elements.next().unwrap().text().next().unwrap(), "Announcing Rust 1.50.0");
-    // 二件目の記事名
-    // assert_eq!(elements.next().unwrap().text().next().unwrap(), "mdBook security advisory");
-    // 三件目の記事名
-    // assert_eq!(elements.next().unwrap().text().next().unwrap(), "Announcing Rust 1.49.0");
-    // 最古の記事名
-    // assert_eq!(elements.last().unwrap().text().next().unwrap(), "Road to Rust 1.0");
+    find_next(nav);
 
     Ok(())
+}
+
+fn find_next(nav: Select) {
+    nav.win
+    nav.for_each(|n| {
+        println!(".");
+        let cur_selector = Selector::parse("span.is-current").unwrap();
+        let cur = n.select(&cur_selector).next();
+        if let Some(v) = cur {
+            return 
+        }
+    });
 }
